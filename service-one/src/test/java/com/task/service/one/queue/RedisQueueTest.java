@@ -1,13 +1,15 @@
 package com.task.service.one.queue;
 
-import com.task.common.model.SignedData;
-import com.task.common.model.UnsignedData;
+import com.task.common.model.QueueInfo;
 import com.task.common.util.DataGenerator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import reactor.test.StepVerifier;
+
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,23 +23,26 @@ public class RedisQueueTest extends AbstractRedisTest {
     @Autowired
     private Queue redisQueue;
     @Autowired
-    private ReactiveRedisTemplate<String, SignedData> signedTemplate;
+    @Qualifier("signed")
+    private ReactiveRedisTemplate<String, byte[]> signedTemplate;
     @Autowired
-    private ReactiveRedisTemplate<String, UnsignedData> unsignedTemplate;
+    @Qualifier("unsigned")
+    private ReactiveRedisTemplate<String, byte[]> unsignedTemplate;
 
     @Test
     public void test() {
-        UnsignedData unsignedData = UnsignedData.create(generator.randomQueueName(),generator.randomQueueName(), new byte[] {1});
+        byte[] unsignedData = new byte[] {1};
+        QueueInfo queueInfo = new QueueInfo(generator.randomQueueName(), generator.randomQueueName());
 
-        StepVerifier.create(redisQueue.send(unsignedData)).expectComplete().verify();
-        StepVerifier.create(unsignedTemplate.opsForList().size(unsignedData.getFromQueue())).expectNext(1L).expectComplete().verify();
+        StepVerifier.create(redisQueue.send(queueInfo, unsignedData)).expectNextCount(1).expectComplete().verify();
+        StepVerifier.create(unsignedTemplate.opsForList().size(queueInfo.getUnsignedDataQueue())).expectNext(1L).expectComplete().verify();
 
-        UnsignedData saved = unsignedTemplate.opsForList().leftPop(unsignedData.getFromQueue()).block();
-        assertEquals(unsignedData, saved);
+        byte[] saved = unsignedTemplate.opsForList().leftPop(queueInfo.getUnsignedDataQueue()).block();
+        assertArrayEquals(unsignedData, saved);
 
-        SignedData expected = SignedData.create(new byte[] {1}, new byte[] {1});
-        signedTemplate.opsForList().leftPush(unsignedData.getToQueue(), expected).block();
+        byte[] expected = new byte[] {2};
+        signedTemplate.opsForList().leftPush(queueInfo.getSignatureQueue(), expected).block();
 
-        StepVerifier.create(redisQueue.receive(unsignedData.getToQueue())).expectNext(expected).expectComplete().verify();
+        StepVerifier.create(redisQueue.receive(queueInfo)).expectNextMatches(next -> Arrays.equals(next, expected)).expectComplete().verify();
     }
 }

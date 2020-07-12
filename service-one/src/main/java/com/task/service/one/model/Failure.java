@@ -1,19 +1,27 @@
-package com.task.common.model;
+package com.task.service.one.model;
 
 import java.util.Objects;
 
-public class Error {
+public class Failure {
     private String reason;
 
-    public Error() {
+    public static Failure create(String reason) {
+        return new Failure(reason);
     }
 
-    public Error(String reason) {
+    public static Failure create(Throwable reason) {
+        return new Failure(reason);
+    }
+
+    public Failure() {
+    }
+
+    public Failure(Throwable err) {
+        this.reason = err.getLocalizedMessage();
+    }
+
+    public Failure(String reason) {
         this.reason = reason;
-    }
-
-    public Error(Throwable reason) {
-        this.reason = reason.getLocalizedMessage();
     }
 
     public String getReason() {
@@ -28,8 +36,8 @@ public class Error {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Error error = (Error) o;
-        return Objects.equals(reason, error.reason);
+        Failure failure = (Failure) o;
+        return Objects.equals(reason, failure.reason);
     }
 
     @Override
@@ -39,7 +47,7 @@ public class Error {
 
     @Override
     public String toString() {
-        return "Error{" +
+        return "Failure{" +
                 "reason='" + reason + '\'' +
                 '}';
     }

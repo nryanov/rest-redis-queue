@@ -1,10 +1,11 @@
 package com.task.service.one.controller;
 
-import com.task.common.model.SignedData;
+import com.task.service.one.model.Success;
 import com.task.service.one.service.SignatureService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
@@ -19,10 +20,11 @@ public class SimpleController {
     }
 
     @GetMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<SignedData> get() {
+    public Mono<ResponseEntity<Success>> get() {
         logger.info("Process next GET request");
         return signatureService
                 .process()
+                .map(ResponseEntity::ok)
                 .doOnError(err -> logger.error(err.getLocalizedMessage()));
     }
 }

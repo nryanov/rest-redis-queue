@@ -1,11 +1,10 @@
 package com.task.service.one.queue;
 
-import com.task.common.model.SignedData;
-import com.task.common.model.UnsignedData;
+import com.task.common.model.QueueInfo;
 import reactor.core.publisher.Mono;
 
 public interface Queue {
-    Mono<Long> send(UnsignedData data);
+    Mono<Long> send(QueueInfo queueInfo, byte[] data);
 
-    Mono<SignedData> receive(String queue);
+    Mono<byte[]> receive(QueueInfo queueInfo);
 }

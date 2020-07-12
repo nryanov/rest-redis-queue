@@ -1,8 +1,6 @@
 package com.task.service.two.configuration;
 
 import com.task.common.configuration.SignatureConfiguration;
-import com.task.common.model.SignedData;
-import com.task.common.model.UnsignedData;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -14,8 +12,8 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
@@ -26,24 +24,24 @@ public class ServiceConfiguration {
 
     @Bean
     @Qualifier("unsigned")
-    public ReactiveRedisTemplate<String, UnsignedData> unsignedDataRedisTemplate(ReactiveRedisConnectionFactory rcf) {
+    public ReactiveRedisTemplate<String, byte[]> unsignedDataRedisTemplate(ReactiveRedisConnectionFactory rcf) {
         StringRedisSerializer keySerializer = new StringRedisSerializer();
-        Jackson2JsonRedisSerializer<UnsignedData> valueSerializer = new Jackson2JsonRedisSerializer<>(UnsignedData.class);
-        RedisSerializationContext.RedisSerializationContextBuilder<String, UnsignedData> builder =
+        RedisSerializer<byte[]> valueSerializer = RedisSerializer.byteArray();
+        RedisSerializationContext.RedisSerializationContextBuilder<String, byte[]> builder =
                 RedisSerializationContext.newSerializationContext(keySerializer);
-        RedisSerializationContext<String, UnsignedData> context = builder.value(valueSerializer).build();
+        RedisSerializationContext<String, byte[]> context = builder.value(valueSerializer).build();
 
         return new ReactiveRedisTemplate<>(rcf, context);
     }
 
     @Bean
     @Qualifier("signed")
-    public ReactiveRedisTemplate<String, SignedData> signedDataRedisTemplate(ReactiveRedisConnectionFactory rcf) {
+    public ReactiveRedisTemplate<String, byte[]> signedDataRedisTemplate(ReactiveRedisConnectionFactory rcf) {
         StringRedisSerializer keySerializer = new StringRedisSerializer();
-        Jackson2JsonRedisSerializer<SignedData> valueSerializer = new Jackson2JsonRedisSerializer<>(SignedData.class);
-        RedisSerializationContext.RedisSerializationContextBuilder<String, SignedData> builder =
+        RedisSerializer<byte[]> valueSerializer = RedisSerializer.byteArray();
+        RedisSerializationContext.RedisSerializationContextBuilder<String, byte[]> builder =
                 RedisSerializationContext.newSerializationContext(keySerializer);
-        RedisSerializationContext<String, SignedData> context = builder.value(valueSerializer).build();
+        RedisSerializationContext<String, byte[]> context = builder.value(valueSerializer).build();
 
         return new ReactiveRedisTemplate<>(rcf, context);
     }

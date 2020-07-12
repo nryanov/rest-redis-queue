@@ -1,9 +1,9 @@
 package com.task.service.one.service;
 
-import com.task.common.model.SignedData;
-import com.task.common.model.UnsignedData;
+import com.task.common.model.QueueInfo;
 import com.task.common.service.ECDSASignature;
 import com.task.common.util.DataGenerator;
+import com.task.service.one.model.Success;
 import com.task.service.one.queue.Queue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,26 +25,33 @@ public class SignatureService {
         this.signature = signature;
     }
 
-    public Mono<SignedData> process() {
-        return Mono.just(UnsignedData.create(dataGenerator.randomQueueName(), dataGenerator.randomQueueName(), dataGenerator.generate()))
+    public Mono<Success> process() {
+        return Mono.just(dataGenerator.generate())
+                .zipWith(Mono.just(new QueueInfo(dataGenerator.randomQueueName(), dataGenerator.randomQueueName())))
                 .doOnNext(data -> logger.info("Unsigned data was generated"))
                 .flatMap(
                         unsignedData -> queue
-                                .send(unsignedData)
+                                .send(unsignedData.getT2(), unsignedData.getT1())
                                 .doOnNext(v -> logger.info("Unsigned data was send to the storage"))
-                                .map(v -> unsignedData.getToQueue())
+                                .map(v -> unsignedData)
                 )
-                .doOnNext(queue -> logger.info("Wait result on queue: {}", queue))
+                .doOnNext(tuple -> logger.info("Wait result on queue: {}", tuple.getT2().getSignatureQueue()))
                 .flatMap(
-                        targetQueue -> queue.receive(targetQueue)
-                        .doOnNext(data -> logger.info("Signed data: {}", data))
+                        tuple -> queue.receive(tuple.getT2())
+                        .doOnNext(data -> logger.info("Got signature"))
+                        .zipWith(Mono.just(tuple))
                 )
                 .doOnNext(data -> logger.info("Verify data signature"))
-                .flatMap(signedData -> {
+                .flatMap(triple -> {
                     try {
-                        return Mono.just(signature.verify(signedData.getData(), signedData.getSignature()))
-                                .doOnNext(signedData::setValid)
-                                .map(a -> signedData);
+                        return Mono.just(signature.verify(triple.getT2().getT1(), triple.getT1()))
+                                .flatMap(result -> {
+                                    if (result) {
+                                        return Mono.just(Success.create(triple.getT2().getT1(), triple.getT1()));
+                                    } else {
+                                        return Mono.error(new RuntimeException("Incorrect signature"));
+                                    }
+                                });
                     } catch (Exception e) {
                         return Mono.error(e);
                     }

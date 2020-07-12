@@ -1,23 +1,21 @@
-package com.task.common.model;
+package com.task.service.one.model;
 
 import java.util.Arrays;
 
-public class SignedData {
+public class Success {
     private byte[] data;
     private byte[] signature;
-    private boolean isValid;
 
-    public static SignedData create(byte[] data, byte[] signature) {
-        return new SignedData(data, signature);
+    public static Success create(byte[] data, byte[] signature) {
+        return new Success(data, signature);
     }
 
-    public SignedData() {
+    public Success() {
     }
 
-    public SignedData(byte[] data, byte[] signature) {
+    public Success(byte[] data, byte[] signature) {
         this.data = data;
         this.signature = signature;
-        this.isValid = false;
     }
 
     public byte[] getData() {
@@ -36,21 +34,13 @@ public class SignedData {
         this.signature = signature;
     }
 
-    public boolean isValid() {
-        return isValid;
-    }
-
-    public void setValid(boolean valid) {
-        isValid = valid;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        SignedData that = (SignedData) o;
-        return Arrays.equals(data, that.data) &&
-                Arrays.equals(signature, that.signature);
+        Success success = (Success) o;
+        return Arrays.equals(data, success.data) &&
+                Arrays.equals(signature, success.signature);
     }
 
     @Override
@@ -62,8 +52,6 @@ public class SignedData {
 
     @Override
     public String toString() {
-        return "SignedData{" +
-                "isValid=" + isValid +
-                '}';
+        return "Success";
     }
 }

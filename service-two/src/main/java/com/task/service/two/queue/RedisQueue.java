@@ -1,7 +1,6 @@
 package com.task.service.two.queue;
 
-import com.task.common.model.SignedData;
-import com.task.common.model.UnsignedData;
+import com.task.common.model.QueueInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -12,26 +11,26 @@ import reactor.core.publisher.Mono;
 @Service
 public class RedisQueue implements Queue {
     private static final Logger logger = LoggerFactory.getLogger(RedisQueue.class);
-    private final ReactiveRedisTemplate<String, SignedData> signedTemplate;
-    private final ReactiveRedisTemplate<String, UnsignedData> unsignedTemplate;
+    private final ReactiveRedisTemplate<String, byte[]> signedTemplate;
+    private final ReactiveRedisTemplate<String, byte[]> unsignedTemplate;
 
-    public RedisQueue(@Qualifier("signed") ReactiveRedisTemplate<String, SignedData> signedTemplate, @Qualifier("unsigned") ReactiveRedisTemplate<String, UnsignedData> unsignedTemplate) {
+    public RedisQueue(@Qualifier("signed") ReactiveRedisTemplate<String, byte[]> signedTemplate, @Qualifier("unsigned") ReactiveRedisTemplate<String, byte[]> unsignedTemplate) {
         this.signedTemplate = signedTemplate;
         this.unsignedTemplate = unsignedTemplate;
     }
 
     @Override
-    public Mono<UnsignedData> receive(String from) {
+    public Mono<byte[]> receive(QueueInfo queueInfo) {
         logger.info("Receive unsigned data from queue");
         return unsignedTemplate
                 .opsForList()
-                .leftPop(from)
+                .leftPop(queueInfo.getUnsignedDataQueue())
                 .switchIfEmpty(Mono.error(new RuntimeException("Task queue was empty")));
     }
 
     @Override
-    public Mono<Long> send(String to, SignedData data) {
+    public Mono<Long> send(QueueInfo queueInfo, byte[] data) {
         logger.info("Send signed data to the destination queue");
-        return signedTemplate.opsForList().leftPush(to, data);
+        return signedTemplate.opsForList().leftPush(queueInfo.getSignatureQueue(), data);
     }
 }

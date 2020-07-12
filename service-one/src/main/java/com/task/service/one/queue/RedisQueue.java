@@ -1,7 +1,6 @@
 package com.task.service.one.queue;
 
-import com.task.common.model.SignedData;
-import com.task.common.model.UnsignedData;
+import com.task.common.model.QueueInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -15,18 +14,18 @@ import java.time.Duration;
 @Service
 public class RedisQueue implements Queue {
     private final static Logger logger = LoggerFactory.getLogger(RedisQueue.class);
-    private final ReactiveRedisTemplate<String, SignedData> signedTemplate;
-    private final ReactiveRedisTemplate<String, UnsignedData> unsignedTemplate;
-    private final ReactiveRedisTemplate<String, String> publisher;
+    private final ReactiveRedisTemplate<String, byte[]> signedTemplate;
+    private final ReactiveRedisTemplate<String, byte[]> unsignedTemplate;
+    private final ReactiveRedisTemplate<String, QueueInfo> publisher;
 
     @Value("${queue.destination}")
     private String destination;
     @Value("${queue.timeout}")
     private int timeout;
 
-    public RedisQueue(@Qualifier("signed") ReactiveRedisTemplate<String, SignedData> signedTemplate,
-                      @Qualifier("unsigned") ReactiveRedisTemplate<String, UnsignedData> unsignedTemplate,
-                      ReactiveRedisTemplate<String, String> publisher
+    public RedisQueue(@Qualifier("signed") ReactiveRedisTemplate<String, byte[]> signedTemplate,
+                      @Qualifier("unsigned") ReactiveRedisTemplate<String, byte[]> unsignedTemplate,
+                      @Qualifier("publisher") ReactiveRedisTemplate<String, QueueInfo> publisher
     ) {
         this.signedTemplate = signedTemplate;
         this.unsignedTemplate = unsignedTemplate;
@@ -34,21 +33,21 @@ public class RedisQueue implements Queue {
     }
 
     @Override
-    public Mono<Long> send(UnsignedData data) {
+    public Mono<Long> send(QueueInfo queueInfo, byte[] data) {
         return unsignedTemplate.opsForList()
-                .leftPush(data.getFromQueue(), data)
+                .leftPush(queueInfo.getUnsignedDataQueue(), data)
                 .doOnNext(l -> logger.info("Unsigned data was saved in the queue"))
-                .then(publisher.convertAndSend(destination, data.getFromQueue()))
+                .then(publisher.convertAndSend(destination, queueInfo))
                 .doOnNext(l -> logger.info("New task info was published"));
     }
 
     @Override
-    public Mono<SignedData> receive(String queue) {
-        logger.info("Try to receive result from: {}", queue);
+    public Mono<byte[]> receive(QueueInfo queueInfo) {
+        logger.info("Try to receive result from: {}", queueInfo.getSignatureQueue());
 
         return signedTemplate
                 .opsForList()
-                .leftPop(queue, Duration.ofSeconds(timeout))
+                .leftPop(queueInfo.getSignatureQueue(), Duration.ofSeconds(timeout))
                 .switchIfEmpty(Mono.error(new Exception("Empty result")));
     }
 }

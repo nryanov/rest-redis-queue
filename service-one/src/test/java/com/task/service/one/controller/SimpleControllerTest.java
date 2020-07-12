@@ -1,6 +1,7 @@
 package com.task.service.one.controller;
 
-import com.task.common.model.SignedData;
+import com.task.service.one.model.Failure;
+import com.task.service.one.model.Success;
 import com.task.service.one.service.SignatureService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -19,19 +20,20 @@ public class SimpleControllerTest {
 
     @Test
     public void testSuccessGet() {
-        SignedData success = SignedData.create(new byte[] {1}, new byte[] {1});
-        success.setValid(true);
+        byte[] data = new byte[] {1};
+        byte[] sign = new byte[] {2};
 
-        Mockito.when(signatureService.process()).thenReturn(Mono.just(success));
+        Mockito.when(signatureService.process()).thenReturn(Mono.just(Success.create(data, sign)));
 
         client
                 .get()
                 .uri("/")
                 .exchange()
                 .expectStatus().isOk()
-                .expectBody(SignedData.class).isEqualTo(success);
+                .expectBody(Success.class).isEqualTo(Success.create(data, sign));
     }
 
+    // FIXME
     @Test
     public void testFailedGet() {
         Mockito.when(signatureService.process()).thenReturn(Mono.error(new Exception("error")));
@@ -41,6 +43,6 @@ public class SimpleControllerTest {
                 .uri("/")
                 .exchange()
                 .expectStatus().is5xxServerError()
-                .expectBody(String.class).isEqualTo("error");
+                .expectBody(Failure.class).isEqualTo(Failure.create("error"));
     }
 }

@@ -16,6 +16,7 @@ import reactor.test.StepVerifier;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.SignatureException;
 
 @SpringBootTest(properties = {
@@ -34,12 +35,14 @@ public class SignatureServiceIntegrationTest extends AbstractRedisTest {
     private ECDSASignature signature;
     @MockBean
     private DataGenerator generator;
+    @Autowired
+    private PublicKey publicKey;
 
     @Test
     public void test() throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         byte[] data = new byte[] {1};
         byte[] sign = signature.sign(data);
-        SignatureData signatureData = SignatureData.create(sign, new byte[] {3});
+        SignatureData signatureData = SignatureData.create(sign, publicKey.getEncoded());
 
         Mockito.when(generator.generate()).thenReturn(data);
         Mockito.when(generator.randomQueueName()).thenReturn("q1", "q2");

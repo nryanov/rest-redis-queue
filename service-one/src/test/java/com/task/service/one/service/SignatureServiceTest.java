@@ -1,5 +1,6 @@
 package com.task.service.one.service;
 
+import com.task.common.model.SignatureData;
 import com.task.common.service.ECDSASignature;
 import com.task.common.util.DataGenerator;
 import com.task.service.one.model.Success;
@@ -29,14 +30,15 @@ public class SignatureServiceTest {
     public void testSuccessFlow() throws Exception {
         byte[] data = new byte[] {1, 2, 3};
         byte[] sign = new byte[] {3, 2, 1};
+        SignatureData signatureData = SignatureData.create(sign, new byte[] {3});
 
         Mockito.when(generator.generate()).thenReturn(data);
         Mockito.when(generator.randomQueueName()).thenReturn("queue1", "queue2");
 
         Mockito.when(queue.send(Mockito.any(), Mockito.any())).thenReturn(Mono.just(1L));
-        Mockito.when(queue.receive(Mockito.any())).thenReturn(Mono.just(sign));
+        Mockito.when(queue.receive(Mockito.any())).thenReturn(Mono.just(signatureData));
 
-        Mockito.when(signature.verify(Mockito.any(), Mockito.any())).thenReturn(true);
+        Mockito.when(signature.verify(Mockito.any(), Mockito.any(SignatureData.class))).thenReturn(true);
 
         StepVerifier.create(signatureService.process()).expectNext(Success.create(data, sign)).expectComplete().verify();
     }
@@ -45,14 +47,15 @@ public class SignatureServiceTest {
     public void testFailureFlowOnSendingUnsignedData() throws Exception {
         byte[] data = new byte[] {1, 2, 3};
         byte[] sign = new byte[] {3, 2, 1};
+        SignatureData signatureData = SignatureData.create(sign, new byte[] {3});
 
         Mockito.when(generator.generate()).thenReturn(data);
         Mockito.when(generator.randomQueueName()).thenReturn("queue1", "queue2");
 
         Mockito.when(queue.send(Mockito.any(), Mockito.any())).thenThrow(new RuntimeException("Error"));
-        Mockito.when(queue.receive(Mockito.any())).thenReturn(Mono.just(sign));
+        Mockito.when(queue.receive(Mockito.any())).thenReturn(Mono.just(signatureData));
 
-        Mockito.when(signature.verify(Mockito.any(), Mockito.any())).thenReturn(true);
+        Mockito.when(signature.verify(Mockito.any(), Mockito.any(SignatureData.class))).thenReturn(true);
 
         StepVerifier.create(signatureService.process()).expectError(RuntimeException.class).verify();
     }
@@ -60,6 +63,8 @@ public class SignatureServiceTest {
     @Test
     public void testFailureFlowOnReceivingSignature() throws Exception {
         byte[] data = new byte[] {1, 2, 3};
+        byte[] sign = new byte[] {3, 2, 1};
+        SignatureData signatureData = SignatureData.create(sign, new byte[] {3});
 
         Mockito.when(generator.generate()).thenReturn(data);
         Mockito.when(generator.randomQueueName()).thenReturn("queue1", "queue2");
@@ -67,7 +72,7 @@ public class SignatureServiceTest {
         Mockito.when(queue.send(Mockito.any(), Mockito.any())).thenReturn(Mono.just(1L));
         Mockito.when(queue.receive(Mockito.any())).thenThrow(new RuntimeException("Error"));
 
-        Mockito.when(signature.verify(Mockito.any(), Mockito.any())).thenReturn(true);
+        Mockito.when(signature.verify(Mockito.any(), Mockito.any(SignatureData.class))).thenReturn(true);
 
         StepVerifier.create(signatureService.process()).expectError(RuntimeException.class).verify();
     }
@@ -76,14 +81,15 @@ public class SignatureServiceTest {
     public void testFailureFlowOnVerifyingSignature() throws Exception {
         byte[] data = new byte[] {1, 2, 3};
         byte[] sign = new byte[] {3, 2, 1};
+        SignatureData signatureData = SignatureData.create(sign, new byte[] {3});
 
         Mockito.when(generator.generate()).thenReturn(data);
         Mockito.when(generator.randomQueueName()).thenReturn("queue1", "queue2");
 
         Mockito.when(queue.send(Mockito.any(), Mockito.any())).thenReturn(Mono.just(1L));
-        Mockito.when(queue.receive(Mockito.any())).thenReturn(Mono.just(sign));
+        Mockito.when(queue.receive(Mockito.any())).thenReturn(Mono.just(signatureData));
 
-        Mockito.when(signature.verify(Mockito.any(), Mockito.any())).thenThrow(new RuntimeException("Error"));
+        Mockito.when(signature.verify(Mockito.any(), Mockito.any(SignatureData.class))).thenThrow(new RuntimeException("Error"));
 
         StepVerifier.create(signatureService.process()).expectError(RuntimeException.class).verify();
     }

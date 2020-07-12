@@ -1,5 +1,7 @@
 package com.task.service.one.model;
 
+import com.task.common.model.SignatureData;
+
 import java.util.Arrays;
 
 public class Success {
@@ -8,6 +10,10 @@ public class Success {
 
     public static Success create(byte[] data, byte[] signature) {
         return new Success(data, signature);
+    }
+
+    public static Success create(byte[] data, SignatureData signatureData) {
+        return new Success(data, signatureData.getSignature());
     }
 
     public Success() {

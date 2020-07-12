@@ -2,6 +2,7 @@ package com.task.service.one.configuration;
 
 import com.task.common.configuration.SignatureConfiguration;
 import com.task.common.model.QueueInfo;
+import com.task.common.model.SignatureData;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,12 +31,12 @@ public class ServiceConfiguration {
 
     @Bean
     @Qualifier("signed")
-    public ReactiveRedisTemplate<String, byte[]> signedDataRedisTemplate(ReactiveRedisConnectionFactory rcf) {
+    public ReactiveRedisTemplate<String, SignatureData> signedDataRedisTemplate(ReactiveRedisConnectionFactory rcf) {
         StringRedisSerializer keySerializer = new StringRedisSerializer();
-        RedisSerializer<byte[]> valueSerializer = RedisSerializer.byteArray();
-        RedisSerializationContext.RedisSerializationContextBuilder<String, byte[]> builder =
+        RedisSerializer<SignatureData> valueSerializer = new Jackson2JsonRedisSerializer<>(SignatureData.class);
+        RedisSerializationContext.RedisSerializationContextBuilder<String, SignatureData> builder =
                 RedisSerializationContext.newSerializationContext(keySerializer);
-        RedisSerializationContext<String, byte[]> context = builder.value(valueSerializer).build();
+        RedisSerializationContext<String, SignatureData> context = builder.value(valueSerializer).build();
 
         return new ReactiveRedisTemplate<>(rcf, context);
     }

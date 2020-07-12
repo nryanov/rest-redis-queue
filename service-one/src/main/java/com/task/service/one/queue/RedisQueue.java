@@ -1,6 +1,7 @@
 package com.task.service.one.queue;
 
 import com.task.common.model.QueueInfo;
+import com.task.common.model.SignatureData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,7 +15,7 @@ import java.time.Duration;
 @Service
 public class RedisQueue implements Queue {
     private final static Logger logger = LoggerFactory.getLogger(RedisQueue.class);
-    private final ReactiveRedisTemplate<String, byte[]> signedTemplate;
+    private final ReactiveRedisTemplate<String, SignatureData> signedTemplate;
     private final ReactiveRedisTemplate<String, byte[]> unsignedTemplate;
     private final ReactiveRedisTemplate<String, QueueInfo> publisher;
 
@@ -23,7 +24,7 @@ public class RedisQueue implements Queue {
     @Value("${queue.timeout}")
     private int timeout;
 
-    public RedisQueue(@Qualifier("signed") ReactiveRedisTemplate<String, byte[]> signedTemplate,
+    public RedisQueue(@Qualifier("signed") ReactiveRedisTemplate<String, SignatureData> signedTemplate,
                       @Qualifier("unsigned") ReactiveRedisTemplate<String, byte[]> unsignedTemplate,
                       @Qualifier("publisher") ReactiveRedisTemplate<String, QueueInfo> publisher
     ) {
@@ -42,7 +43,7 @@ public class RedisQueue implements Queue {
     }
 
     @Override
-    public Mono<byte[]> receive(QueueInfo queueInfo) {
+    public Mono<SignatureData> receive(QueueInfo queueInfo) {
         logger.info("Try to receive result from: {}", queueInfo.getSignatureQueue());
 
         return signedTemplate

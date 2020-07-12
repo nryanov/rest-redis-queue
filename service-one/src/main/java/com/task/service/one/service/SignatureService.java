@@ -26,6 +26,7 @@ public class SignatureService {
     }
 
     public Mono<Success> process() {
+        System.out.println(queue);
         return Mono.just(dataGenerator.generate())
                 .zipWith(Mono.just(new QueueInfo(dataGenerator.randomQueueName(), dataGenerator.randomQueueName())))
                 .doOnNext(data -> logger.info("Unsigned data was generated"))
@@ -47,8 +48,10 @@ public class SignatureService {
                         return Mono.just(signature.verify(triple.getT2().getT1(), triple.getT1()))
                                 .flatMap(result -> {
                                     if (result) {
+                                        logger.info("Signature is correct");
                                         return Mono.just(Success.create(triple.getT2().getT1(), triple.getT1()));
                                     } else {
+                                        logger.error("Signature is incorrect");
                                         return Mono.error(new RuntimeException("Incorrect signature"));
                                     }
                                 });

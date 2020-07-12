@@ -1,4 +1,4 @@
-package com.task.service.one.queue;
+package com.task.service.one;
 
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;

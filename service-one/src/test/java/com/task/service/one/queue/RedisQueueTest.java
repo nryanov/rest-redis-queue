@@ -1,7 +1,9 @@
 package com.task.service.one.queue;
 
 import com.task.common.model.QueueInfo;
+import com.task.common.model.SignatureData;
 import com.task.common.util.DataGenerator;
+import com.task.service.one.AbstractRedisTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -9,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import reactor.test.StepVerifier;
 
+import java.security.PublicKey;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,10 +27,12 @@ public class RedisQueueTest extends AbstractRedisTest {
     private Queue redisQueue;
     @Autowired
     @Qualifier("signed")
-    private ReactiveRedisTemplate<String, byte[]> signedTemplate;
+    private ReactiveRedisTemplate<String, SignatureData> signedTemplate;
     @Autowired
     @Qualifier("unsigned")
     private ReactiveRedisTemplate<String, byte[]> unsignedTemplate;
+    @Autowired
+    private PublicKey publicKey;
 
     @Test
     public void test() {
@@ -41,8 +46,8 @@ public class RedisQueueTest extends AbstractRedisTest {
         assertArrayEquals(unsignedData, saved);
 
         byte[] expected = new byte[] {2};
-        signedTemplate.opsForList().leftPush(queueInfo.getSignatureQueue(), expected).block();
+        signedTemplate.opsForList().leftPush(queueInfo.getSignatureQueue(), SignatureData.create(expected, publicKey.getEncoded())).block();
 
-        StepVerifier.create(redisQueue.receive(queueInfo)).expectNextMatches(next -> Arrays.equals(next, expected)).expectComplete().verify();
+        StepVerifier.create(redisQueue.receive(queueInfo)).expectNext(SignatureData.create(expected, publicKey.getEncoded())).expectComplete().verify();
     }
 }
